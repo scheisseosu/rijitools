@@ -4,7 +4,15 @@ from structs import Board, Topic, Reply
 
 domain = "https://rijihuudu.ahlamontada.com"
 
-def scrape(options):
+default_ops = {
+    'outputf':None,
+    'users_only':False,
+    'selected_boards':None,
+    'quiet':False
+}
+
+#Return a list of Board objects from rijihuudu.ahlamontada
+def scrape(options=default_ops):
     riji_home_html = requests.get(domain).text
 
     rijisoup = BeautifulSoup(riji_home_html, 'html.parser')
@@ -41,6 +49,9 @@ def scrape_board(board, quiet=True):
         print(f"Processing {board.name:>20.20}...",end="\r")
     board_page_html = requests.get(board.url).text
 
+#Enumerate topic object, creating reply objects
+def scrape_topic(topic):
+    pass
     
 
 
