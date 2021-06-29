@@ -36,7 +36,7 @@ class Topic(object):
 
 class Reply(Topic):
     def __init__(self, url, title, time, description, content, author, op):
-        Topic.__init__(self, title, time, description, content, author)
+        Topic.__init__(self, url, title, time, description, content, author)
         self.reply_to = op
 
 def get_datetime(timestr):
