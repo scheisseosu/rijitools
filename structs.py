@@ -33,16 +33,19 @@ class Board(object):
         return f"Rijihuudu Board \"{self.name}\" with {self.num_posts} posts at {self.url}"
 
 class Topic(object):
-    def __init__(self, url, title, time, description, content, author):
+    def __init__(self, url, title, description, content, author):
         self.url = url
         self.title = title
-        self.time = get_datetime(time)
+        self.time = None
         self.content = content
         self.author = author
         self.replies = []
     
     def add_reply(self, rep):
         self.replies.append(rep)
+
+    def set_time(self, timestr):
+        self.time = get_datetime(timestr)
 
     def __len__(self):
         return len(self.replies)+1 #count topic post + num replies
