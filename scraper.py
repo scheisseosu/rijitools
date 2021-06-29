@@ -49,6 +49,21 @@ def scrape_board(board, quiet=True):
         print(f"Processing {board.name:>20.20}...",end="\r")
     board_page_html = requests.get(board.url).text
 
+    boardsoup = BeautifulSoup(board_page_html, 'html.parser')
+
+    #Count number of pages on board
+    pages = boardsoup.find(class_="pagination")
+    if pages.a:
+        #has pages
+        pages = int(pages.a.find_all('strong')[1].string)
+    else:
+        #only front page
+        pages = 1
+    board.pages = pages
+
+    
+
+
 #Enumerate topic object, creating reply objects
 def scrape_topic(topic):
     pass

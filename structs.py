@@ -4,9 +4,10 @@ from datetime import timedelta, datetime, time
 from bs4 import BeautifulSoup
 
 class Board(object):
-    def __init__(self, name, url):
+    def __init__(self, name, url, pages=0):
         self.name = name
         self.url = url
+        self.pages = pages
         self.topics = []
         self.num_topics = 0
         self.num_posts = 0 #topic posts AND replies included
