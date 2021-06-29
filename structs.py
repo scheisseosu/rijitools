@@ -16,6 +16,18 @@ class Board(object):
         self.topics.append(top)
         self.num_topics += 1
         self.num_posts += len(top)
+
+    #Get the url of a given page on the board
+    def page_url(self, page_num):
+        #base case: first page is normal url
+        if page_num==1:
+            return self.url
+        
+        spliturl = self.url.split("-")
+        spliturl[1] = '-'+spliturl[1] #replace hyphen used to split base url
+
+        page_identifier = "p"+str(50*(page_num-1))
+        return spliturl[0]+page_identifier+spliturl[1]
     
     def __repr__(self):
         return f"Rijihuudu Board \"{self.name}\" with {self.num_posts} posts at {self.url}"
