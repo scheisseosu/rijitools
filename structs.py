@@ -50,10 +50,16 @@ class Topic(object):
     def __len__(self):
         return len(self.replies)+1 #count topic post + num replies
 
+    def __repr__(self):
+        return f"Topic {self.title} by {self.author} at {self.time}"
+
 class Reply(Topic):
-    def __init__(self, url, title, time, content, author, op):
-        Topic.__init__(self, url, title, time, None, content, author)
+    def __init__(self, title, content, author, op):
+        Topic.__init__(self, op.url, title, None, content, author)
         self.reply_to = op
+    
+    def __repr__(self):
+        return f"Reply {self.title} by {self.author} at {self.time}"
 
 def get_datetime(timestr):
 
