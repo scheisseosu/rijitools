@@ -1,4 +1,4 @@
-import requests, sys, time
+import requests, sys, re
 from bs4 import BeautifulSoup
 from structs import Board, Topic, Reply
 
@@ -16,6 +16,8 @@ def scrape(options=default_ops):
     riji_home_html = requests.get(domain).text
 
     rijisoup = BeautifulSoup(riji_home_html, 'html.parser')
+
+    #Get users
 
     boards = None
     if not options['users_only']:
@@ -40,13 +42,13 @@ def scrape(options=default_ops):
             scrape_board(board, quiet=options['quiet'])
         print()
 
-    #Get users
+    
 
 
 def scrape_board(board, quiet=True):
     #Progress report
-    if not quiet:
-        print(f"Processing {board.name:>20.20}...",end="\r")
+    # if not quiet:
+    #     print(f"Processing {board.name:>20.20}...",end="\r")
     board_page_html = requests.get(board.url).text
 
     boardsoup = BeautifulSoup(board_page_html, 'html.parser')
@@ -61,17 +63,134 @@ def scrape_board(board, quiet=True):
         pages = 1
     board.pages = pages
 
-    
+    #Iterate through topics for each page
+    for i in range(1,board.pages+1):
+        if not quiet:
+            print(f"Processing {board.name:>20.20}... Page [{i}/{board.pages}]",end="\r")
+
+        #Get the contents of current page
+        page_html = None
+        if i==1:
+            #Use already pulled page html
+            page_html = board_page_html
+        else:
+            page_html = requests.get(board.page_url(i)).text
+        pagesoup = BeautifulSoup(page_html, 'html.parser')
+
+        html_topics = pagesoup.find_all(name="li", class_=re.compile("row"))
+        
+
+        #Create object for each html topic item
+        for t in html_topics:
+            
+            #need url, title, description, content, author
+            titleelem = t.find(class_="topictitle")
+            url = domain+ titleelem['href']
+
+            #check title formatting
+            formatted = titleelem.find('span')
+            title = ""
+            if formatted:
+                title = formatted.string
+            else:
+                title = titleelem.string
+            
+            #get title description
+            description = titleelem.find(class_="topic-description")
+            if description:
+                #access the string
+                description = description.string
+
+            #FIXME: pull user obj for author after creating userlist
+            author = t.find(class_="topic-author").string
+            if not author:
+                #none or (most likely) multiple strings in elem, due to formatting
+                author = t.find(class_="topic-author").stripped_strings
+                author = ' '.join(author)
+            #strip to username
+            author = author[author.index("by")+3:]
+            
+            #Initialize topic item with no content
+            topicobj = Topic(url, title, description, None, author)
+            
+            #Scrape through topic page to fill attribs
+            scrape_topic(topicobj)
+
+            #Add completed topic to board
+            board.add_topic(topicobj)
+    print(board)
 
 
-#Enumerate topic object, creating reply objects
+#Enumerate topic object, creating reply objects and content
 def scrape_topic(topic):
-    pass
+    topic_page_html = requests.get(topic.url).text
+    topicsoup = BeautifulSoup(topic_page_html, 'html.parser')
+
+    #collect list of posts in topic, excluding sponsored posts (id="p0")
+    posts = topicsoup.find_all(name="div", id=re.compile("^p[1-9][0-9]*"))
+
+    #Get time of topic op
+    datestr = posts[0].find(name="div", class_="topic-date").string
+    #Fix time on posts with rep
+    if not datestr:
+        datestr = posts[0].find(name="div", class_="topic-date").get_text()
+    topic.set_time(datestr)
+
+    #Set topic content
+    topic.content = get_post_content(posts[0])
+
+    #iterate through replies (if any exist)
+    if len(posts)>1:
+        for reply in posts[1:]:
+            title = reply.find(class_="topic-title").a.string
+            
+            content = get_post_content(reply)
+
+            author = reply.find(class_='postprofile-name')
+            #Catch guest accounts (don't have /a/ elems)
+            if author.a:
+                author = author.a
+            author = author.string
+            
+            if not author:
+                #special formatting
+                author = reply.find(class_='postprofile-name').find(name='strong').string
+            
+            replyobj = Reply(title, content, author, topic)
+            #update time attrib
+            datestr = reply.find(class_="topic-date").string
+            #fix date on replies with rep
+            if not datestr:
+                datestr =reply.find(name="div", class_="topic-date").get_text()
+            replyobj.set_time(datestr)
+
+            #Add completed reply to topic
+            topic.add_reply(replyobj)
     
+            
+    
+
+
+
+
+#get the content of a BS post object
+def get_post_content(post):
+    content_iter = post.find(class_="content").strings
+    content = ""
+    for cnt in content_iter:
+        content+=cnt+"\n"
+    content = content[:-2] #strip last newline char
+    return content
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
+
+    if "-t" in args:
+        #TESTING
+        top = Topic("https://rijihuudu.ahlamontada.com/t346-dust-in-the-corners", "ATENNTION", "this is mostly for my big stiste rif your not my big stist er GET OUT", None, "\\f")
+        scrape_topic(top)
+        sys.exit(0)
 
     if "-h" in args or "--help" in args:
         print("Usage: scraper.py [options]")
