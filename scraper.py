@@ -142,8 +142,10 @@ def scrape_topic(topic):
     #iterate through replies (if any exist)
     if len(posts)>1:
         for reply in posts[1:]:
-            title = reply.find(class_="topic-title").a.string
-            
+            try:
+                title = reply.find(class_="topic-title").a.string
+            except AttributeError:
+                continue
             content = get_post_content(reply)
 
             author = reply.find(class_='postprofile-name')
@@ -188,7 +190,7 @@ if __name__ == "__main__":
 
     if "-t" in args:
         #TESTING
-        top = Topic("https://rijihuudu.ahlamontada.com/t346-dust-in-the-corners", "ATENNTION", "this is mostly for my big stiste rif your not my big stist er GET OUT", None, "\\f")
+        top = Topic("https://rijihuudu.ahlamontada.com/t348-any-___-ers-in-chat", "ATENNTION", "this is mostly for my big stiste rif your not my big stist er GET OUT", None, "\\f")
         scrape_topic(top)
         sys.exit(0)
 
