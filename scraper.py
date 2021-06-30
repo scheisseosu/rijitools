@@ -41,6 +41,8 @@ def scrape(options=default_ops):
         for board in boards:
             scrape_board(board, quiet=options['quiet'])
         print()
+    
+
 
     
 
@@ -65,8 +67,6 @@ def scrape_board(board, quiet=True):
 
     #Iterate through topics for each page
     for i in range(1,board.pages+1):
-        if not quiet:
-            print(f"Processing {board.name:>20.20}... Page [{i}/{board.pages}]",end="\r")
 
         #Get the contents of current page
         page_html = None
@@ -81,8 +81,17 @@ def scrape_board(board, quiet=True):
         
 
         #Create object for each html topic item
+        numtop = len(html_topics)
+        count = 0
+
         for t in html_topics:
             
+            #PROGRESS
+            if not quiet:
+                prog = count/float(numtop)
+                bar = f"[{'█'*int(prog*50)}{'-'*int(50-(prog*50))}]"
+                print(f"Processing {board.name:>20.20}... Page [{i}/{board.pages}]\t{bar}",end="\r")
+
             #need url, title, description, content, author
             titleelem = t.find(class_="topictitle")
             url = domain+ titleelem['href']
@@ -118,6 +127,7 @@ def scrape_board(board, quiet=True):
 
             #Add completed topic to board
             board.add_topic(topicobj)
+            count+= 1
     print(board)
 
 
