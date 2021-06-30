@@ -48,17 +48,17 @@ def scrape(options=default_ops):
             scrape_board(board, quiet=options['quiet'])
         print()
     
-    if options['outputf']:
-        with open(options['outputf'], "w", encoding='utf-8') as f:
-            for b in boards:
-                f.write(repr(b)+"\n")
-                for t in b.topics:
-                    f.write("\t"+repr(t)+"\n")
-                    for r in t.replies:
-                        f.write("\t\t"+repr(r)+"\n")
-    
-    #pickle objects
-    save_object(boards, "boards.pkl")
+        if options['outputf']:
+            with open(f"{options['outputf']}.txt", "w", encoding='utf-8') as f:
+                for b in boards:
+                    f.write(repr(b)+"\n")
+                    for t in b.topics:
+                        f.write("\t"+repr(t)+"\n")
+                        for r in t.replies:
+                            f.write("\t\t"+repr(r)+"\n")
+        
+        #pickle objects
+        save_object(boards, f"{options['outputf']}.pkl")
 
     return boards
     
