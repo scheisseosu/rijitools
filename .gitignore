@@ -1,1 +1,3 @@
 __pycache__/structs.cpython-38.pyc
+*.pkl
+*.txt

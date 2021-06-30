@@ -1,6 +1,8 @@
-import requests, sys, re
+import requests, sys, re, pickle
 from bs4 import BeautifulSoup
 from structs import Board, Topic, Reply
+
+sys.setrecursionlimit(50000)
 
 domain = "https://rijihuudu.ahlamontada.com"
 
@@ -10,6 +12,10 @@ default_ops = {
     'selected_boards':None,
     'quiet':False
 }
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as output:  # Overwrites any existing file.
+        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
 #Return a list of Board objects from rijihuudu.ahlamontada
 def scrape(options=default_ops):
@@ -41,6 +47,20 @@ def scrape(options=default_ops):
         for board in boards:
             scrape_board(board, quiet=options['quiet'])
         print()
+    
+    if options['outputf']:
+        with open(options['outputf'], "w", encoding='utf-8') as f:
+            for b in boards:
+                f.write(repr(b)+"\n")
+                for t in b.topics:
+                    f.write("\t"+repr(t)+"\n")
+                    for r in t.replies:
+                        f.write("\t\t"+repr(r)+"\n")
+    
+    #pickle objects
+    save_object(boards, "boards.pkl")
+
+    return boards
     
 
 
