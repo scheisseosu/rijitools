@@ -10,7 +10,8 @@ default_ops = {
     'outputf':None,
     'users_only':False,
     'selected_boards':None,
-    'quiet':False
+    'quiet':False,
+    'topic_limit':None
 }
 
 def save_object(obj, filename):
@@ -45,7 +46,7 @@ def scrape(options=default_ops):
         
         #Scan through topics to fill board properties
         for board in boards:
-            scrape_board(board, quiet=options['quiet'])
+            scrape_board(board, quiet=options['quiet'], topic_limit=options['topic_limit'])
         print()
     
         if options['outputf']:
@@ -67,7 +68,7 @@ def scrape(options=default_ops):
     
 
 
-def scrape_board(board, quiet=True):
+def scrape_board(board, quiet=True, topic_limit=None):
     #Progress report
     # if not quiet:
     #     print(f"Processing {board.name:>20.20}...",end="\r")
@@ -86,7 +87,11 @@ def scrape_board(board, quiet=True):
     board.pages = pages
 
     #Iterate through topics for each page
-    for i in range(1,board.pages+1):
+    page_iterations = board.pages
+    if topic_limit:
+        page_iterations = 1
+    
+    for i in range(1,page_iterations+1):
 
         #Get the contents of current page
         page_html = None
@@ -99,6 +104,9 @@ def scrape_board(board, quiet=True):
 
         html_topics = pagesoup.find_all(name="li", class_=re.compile("row"))
         
+        #cap number of html topics to process
+        if topic_limit:
+            html_topics = html_topics[:topic_limit]
 
         #Create object for each html topic item
         numtop = len(html_topics)
@@ -226,10 +234,11 @@ if __name__ == "__main__":
 
     if "-h" in args or "--help" in args:
         print("Usage: scraper.py [options]")
-        print("\t-o [filename]\tOutput collected data to a file")
-        print("\t-u           \tOnly collect user info")
-        print("\t-b [board]   \tEnter a comma-separated list of boards to include (use _ for spaces)")
-        print("\t-q           \tQuiet (run without progress output")
+        print("\t-o [filename]  \tOutput collected data to a file")
+        print("\t-u             \tOnly collect user info")
+        print("\t-b [board]     \tEnter a comma-separated list of boards to include (use _ for spaces)")
+        print("\t-q             \tQuiet (run without progress output")
+        print("\t-n [num topics]\tMaximum number of topics to scrape from each board")
 
         sys.exit(0)
 
@@ -252,6 +261,10 @@ if __name__ == "__main__":
             options['selected_boards'] = cleaned
         
         options['quiet'] = "-q" in args
+
+        options['topic_limit'] = None
+        if "-n" in args:
+            options['topic_limit'] = int(args[args.index("-n")+1])
 
     except Exception as e:
         print(f"Error on argument processing, use \"python scraper.py -h\" for usage:\n\n{e}")
