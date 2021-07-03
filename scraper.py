@@ -1,10 +1,11 @@
 import requests, sys, re, pickle
 from bs4 import BeautifulSoup
-from structs import Board, Topic, Reply
+from .structs import Board, Topic, Reply, User
 
 sys.setrecursionlimit(50000)
 
 domain = "https://rijihuudu.ahlamontada.com"
+users = {} 
 
 default_ops = {
     'outputf':None,
@@ -24,7 +25,6 @@ def scrape(options=default_ops):
 
     rijisoup = BeautifulSoup(riji_home_html, 'html.parser')
 
-    #Get users
 
     boards = None
     if not options['users_only']:
@@ -57,9 +57,8 @@ def scrape(options=default_ops):
                         f.write("\t"+repr(t)+"\n")
                         for r in t.replies:
                             f.write("\t\t"+repr(r)+"\n")
-        
-        #pickle objects
-        save_object(boards, f"{options['outputf']}.pkl")
+            #pickle objects
+            save_object(boards, f"{options['outputf']}.pkl")
 
     return boards
     
@@ -69,9 +68,8 @@ def scrape(options=default_ops):
 
 
 def scrape_board(board, quiet=True, topic_limit=None):
-    #Progress report
-    # if not quiet:
-    #     print(f"Processing {board.name:>20.20}...",end="\r")
+    global users
+
     board_page_html = requests.get(board.url).text
 
     boardsoup = BeautifulSoup(board_page_html, 'html.parser')
@@ -147,8 +145,12 @@ def scrape_board(board, quiet=True, topic_limit=None):
             #strip to username
             author = author[author.index("by")+3:]
             
+            #set up user obj for author
+            users.setdefault(author, User(author))
+            authorobj = users[author]
+            
             #Initialize topic item with no content
-            topicobj = Topic(url, title, description, None, author)
+            topicobj = Topic(url, title, description, None, authorobj)
             
             #Scrape through topic page to fill attribs
             scrape_topic(topicobj)
@@ -177,6 +179,12 @@ def scrape_topic(topic):
     #Set topic content
     topic.content = get_post_content(posts[0])
 
+    #ensure topic's author has pfp (since it cant be found from topic listing)
+    if not topic.author.pfp:
+        #record the pfp url source for this author
+        urlext = posts[0].find(class_='postprofile-avatar').find(name='img')['src']
+        topic.author.set_pfp(domain+urlext)
+
     #iterate through replies (if any exist)
     if len(posts)>1:
         for reply in posts[1:]:
@@ -196,7 +204,16 @@ def scrape_topic(topic):
                 #special formatting
                 author = reply.find(class_='postprofile-name').find(name='strong').string
             
-            replyobj = Reply(title, content, author, topic)
+            #get author object
+            users.setdefault(author, User(author))
+            authorobj = users[author]
+
+            if not authorobj.pfp:
+                #record the pfp url source for this author
+                urlext = reply.find(class_='postprofile-avatar').find(name='img')['src']
+                authorobj.set_pfp(domain+urlext)
+            
+            replyobj = Reply(title, content, authorobj, topic)
             #update time attrib
             datestr = reply.find(class_="topic-date").string
             #fix date on replies with rep

@@ -1,7 +1,6 @@
 import requests
 import datetime
 from datetime import timedelta, datetime, time
-from bs4 import BeautifulSoup
 
 class Board(object):
     def __init__(self, name, url, pages=0):
@@ -60,6 +59,14 @@ class Reply(Topic):
     
     def __repr__(self):
         return f"Reply {self.title} by {self.author} at {self.time}"
+
+class User(object):
+    def __init__(self, name):
+        self.name = name
+        self.pfp = None
+    
+    def set_pfp(self, url):
+        self.pfp = url
 
 def get_datetime(timestr):
 
